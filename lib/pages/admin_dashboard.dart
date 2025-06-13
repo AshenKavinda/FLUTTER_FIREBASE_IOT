@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_firebase_iot/pages/add_unit_page.dart';
 import '../utils/theme.dart';
 
 class AdminDashboard extends StatelessWidget {
@@ -38,14 +39,22 @@ class AdminDashboard extends StatelessWidget {
                     context,
                     title: "Income Analysis",
                     icon: Icons.analytics,
-                    onTap:
-                        () => Navigator.pushNamed(context, '/income-analysis'),
+                    onTap: () => Navigator.pushNamed(context, '/debug'),
                   ),
                 ],
               ),
             ),
           ],
         ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed:
+            () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => AddUnitPage()),
+            ),
+        backgroundColor: AppColors.navyBlue,
+        child: Icon(Icons.add, color: AppColors.cream),
       ),
     );
   }
