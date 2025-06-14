@@ -15,18 +15,12 @@ class DatabaseService {
     }
   }
 
-  /// Fetch units with pagination
-  /// [limit] is the number of documents per page
-  /// [startAfterDoc] is the last document from the previous page (for pagination)
-  Future<List<QueryDocumentSnapshot>> fetchUnits({
-    int limit = 10,
-    DocumentSnapshot? startAfterDoc,
-  }) async {
-    Query query = _unitsCollection.orderBy('name').limit(limit);
-    if (startAfterDoc != null) {
-      query = query.startAfterDocument(startAfterDoc);
-    }
-    QuerySnapshot snapshot = await query.get();
-    return snapshot.docs;
+  /// Get all units, returning only location and id fields
+  Future<List<Map<String, dynamic>>> getAllUnits() async {
+    QuerySnapshot snapshot = await _unitsCollection.get();
+    return snapshot.docs.map((doc) {
+      final data = doc.data() as Map<String, dynamic>;
+      return {'location': data['location'], 'id': data['id']};
+    }).toList();
   }
 }

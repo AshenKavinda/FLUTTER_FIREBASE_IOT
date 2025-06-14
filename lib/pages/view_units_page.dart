@@ -1,0 +1,206 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_firebase_iot/pages/unit_details_page.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:flutter_polyline_points/flutter_polyline_points.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:url_launcher/url_launcher.dart';
+import '../utils/theme.dart';
+
+class ViewUnitsPage extends StatefulWidget {
+  @override
+  _ViewUnitsPageState createState() => _ViewUnitsPageState();
+}
+
+class _ViewUnitsPageState extends State<ViewUnitsPage> {
+  final TextEditingController _searchController = TextEditingController();
+  late GoogleMapController _mapController;
+  Set<Marker> _markers = {};
+  PolylinePoints polylinePoints = PolylinePoints();
+  Map<PolylineId, Polyline> polylines = {};
+  Position? _currentPosition;
+  String? _selectedUnitId;
+
+  @override
+  void initState() {
+    super.initState();
+    _getCurrentLocation();
+    _loadUnits();
+  }
+
+  Future<void> _getCurrentLocation() async {
+    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) return;
+
+    LocationPermission permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission != LocationPermission.whileInUse) return;
+    }
+
+    Position position = await Geolocator.getCurrentPosition();
+    setState(() => _currentPosition = position);
+    _mapController.animateCamera(
+      CameraUpdate.newLatLngZoom(
+        LatLng(position.latitude, position.longitude),
+        12,
+      ),
+    );
+  }
+
+  Future<void> _loadUnits() async {
+    QuerySnapshot snapshot =
+        await FirebaseFirestore.instance.collection('units').get();
+    print('Loaded ${snapshot.docs.length} units');
+    print(snapshot.docs.map((doc) => doc.data()).toList());
+
+    Set<Marker> markers = {};
+    snapshot.docs.forEach((doc) {
+      GeoPoint location = doc['location'];
+      markers.add(
+        Marker(
+          markerId: MarkerId(doc.id),
+          position: LatLng(location.latitude, location.longitude),
+          infoWindow: InfoWindow(title: 'loker'),
+          onTap: () => setState(() => _selectedUnitId = doc.id),
+        ),
+      );
+    });
+
+    setState(() => _markers = markers);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('View Units'),
+        backgroundColor: AppColors.navyBlue,
+        foregroundColor: Colors.white,
+      ),
+      body: Stack(
+        children: [
+          GoogleMap(
+            initialCameraPosition: CameraPosition(
+              target: LatLng(6.9271, 79.8612), // Default Colombo coordinates
+              zoom: 12,
+            ),
+            markers: _markers,
+            polylines: Set<Polyline>.of(polylines.values),
+            onMapCreated: (controller) => _mapController = controller,
+            myLocationEnabled: true,
+          ),
+          Positioned(
+            top: 10,
+            left: 10,
+            right: 10,
+            child: Card(
+              color: Colors.white,
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: _searchController,
+                        decoration: InputDecoration(
+                          hintText: 'Search by Unit ID',
+                          border: InputBorder.none,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      icon: Icon(Icons.search, color: AppColors.navyBlue),
+                      onPressed: () async {
+                        if (_searchController.text.isEmpty) return;
+                        DocumentSnapshot doc =
+                            await FirebaseFirestore.instance
+                                .collection('units')
+                                .doc(_searchController.text.trim())
+                                .get();
+                        if (doc.exists) {
+                          GeoPoint location = doc['location'];
+                          _mapController.animateCamera(
+                            CameraUpdate.newLatLngZoom(
+                              LatLng(location.latitude, location.longitude),
+                              16,
+                            ),
+                          );
+                          setState(() => _selectedUnitId = doc.id);
+                        }
+                      },
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          if (_selectedUnitId != null)
+            Positioned(
+              bottom: 20,
+              left: 20,
+              right: 20,
+              child: ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.navyBlue,
+                  padding: EdgeInsets.symmetric(vertical: 16),
+                ),
+                child: Text(
+                  'View Details',
+                  style: TextStyle(color: Colors.white),
+                ),
+                onPressed:
+                    () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder:
+                            (context) =>
+                                UnitDetailsPage(unitId: _selectedUnitId!),
+                      ),
+                    ),
+              ),
+            ),
+        ],
+      ),
+      floatingActionButton: Column(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          SizedBox(height: 10),
+          FloatingActionButton(
+            heroTag: 'location',
+            backgroundColor: Colors.orange,
+            child: Icon(Icons.my_location, color: AppColors.navyBlue),
+            onPressed: _getCurrentLocation,
+          ),
+          SizedBox(height: 10),
+          FloatingActionButton(
+            heroTag: 'open_in_google_maps',
+            backgroundColor: Colors.blue,
+            child: Icon(Icons.map, color: Colors.white),
+            onPressed: () async {
+              if (_selectedUnitId == null) return;
+              DocumentSnapshot doc =
+                  await FirebaseFirestore.instance
+                      .collection('units')
+                      .doc(_selectedUnitId)
+                      .get();
+              GeoPoint destination = doc['location'];
+              final Uri url = Uri.parse(
+                'https://www.google.com/maps/dir/?api=1&destination=${destination.latitude},${destination.longitude}&travelmode=driving',
+              );
+              // ignore: deprecated_member_use
+              if (await canLaunchUrl(url)) {
+                await launchUrl(
+                  url,
+                  mode: LaunchMode.externalApplication,
+                ); // <-- important
+              } else {
+                throw 'Could not launch $url';
+              }
+            },
+          ),
+        ],
+      ),
+    );
+  }
+}
