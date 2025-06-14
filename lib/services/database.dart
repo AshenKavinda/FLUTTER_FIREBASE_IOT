@@ -14,4 +14,19 @@ class DatabaseService {
       throw "Unexpected error: $e";
     }
   }
+
+  /// Fetch units with pagination
+  /// [limit] is the number of documents per page
+  /// [startAfterDoc] is the last document from the previous page (for pagination)
+  Future<List<QueryDocumentSnapshot>> fetchUnits({
+    int limit = 10,
+    DocumentSnapshot? startAfterDoc,
+  }) async {
+    Query query = _unitsCollection.orderBy('name').limit(limit);
+    if (startAfterDoc != null) {
+      query = query.startAfterDocument(startAfterDoc);
+    }
+    QuerySnapshot snapshot = await query.get();
+    return snapshot.docs;
+  }
 }

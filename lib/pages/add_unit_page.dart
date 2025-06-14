@@ -7,6 +7,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import '../services/database.dart';
 
 class AddUnitPage extends StatefulWidget {
+  const AddUnitPage({super.key});
+
   @override
   _AddUnitPageState createState() => _AddUnitPageState();
 }
@@ -101,10 +103,11 @@ class _AddUnitPageState extends State<AddUnitPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: Colors.white,
       appBar: AppBar(
         title: Text('Add New Unit'),
         backgroundColor: AppColors.navyBlue,
-        foregroundColor: AppColors.cream,
+        foregroundColor: Colors.white,
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -129,19 +132,17 @@ class _AddUnitPageState extends State<AddUnitPage> {
                         Text(
                           'Lat: ${_currentPosition!.latitude.toStringAsFixed(6)}\n'
                           'Lng: ${_currentPosition!.longitude.toStringAsFixed(6)}',
-                          style: TextStyle(color: AppColors.cream),
+                          style: TextStyle(color: Colors.white),
                         ),
                       SizedBox(height: 10),
                       ElevatedButton(
                         onPressed: _getCurrentLocation,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.skyBlue,
+                          backgroundColor: Colors.white,
                         ),
                         child:
                             _isLoading
-                                ? CircularProgressIndicator(
-                                  color: AppColors.cream,
-                                )
+                                ? CircularProgressIndicator(color: Colors.white)
                                 : Text(
                                   'Get Current Location',
                                   style: TextStyle(color: AppColors.navyBlue),
@@ -159,7 +160,7 @@ class _AddUnitPageState extends State<AddUnitPage> {
                   labelText: 'Number of Lockers',
                   border: OutlineInputBorder(),
                   filled: true,
-                  fillColor: AppColors.skyBlue.withOpacity(0.2),
+                  fillColor: Colors.white,
                 ),
                 keyboardType: TextInputType.number,
                 initialValue: '1',
@@ -195,7 +196,7 @@ class _AddUnitPageState extends State<AddUnitPage> {
                 ),
                 child:
                     _isLoading
-                        ? CircularProgressIndicator(color: AppColors.cream)
+                        ? CircularProgressIndicator(color: Colors.white)
                         : Text(
                           'Save Unit',
                           style: Theme.of(context).textTheme.titleLarge,

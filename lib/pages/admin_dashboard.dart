@@ -3,10 +3,20 @@ import 'package:flutter_firebase_iot/pages/add_unit_page.dart';
 import '../utils/theme.dart';
 
 class AdminDashboard extends StatelessWidget {
+  const AdminDashboard({super.key});
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Admin Dashboard'), centerTitle: true),
+      backgroundColor: Colors.white,
+      appBar: AppBar(
+        backgroundColor: AppColors.navyBlue,
+        title: Text(
+          'Admin Dashboard',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
+        centerTitle: true,
+      ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
         child: Column(
@@ -54,7 +64,7 @@ class AdminDashboard extends StatelessWidget {
               MaterialPageRoute(builder: (context) => AddUnitPage()),
             ),
         backgroundColor: AppColors.navyBlue,
-        child: Icon(Icons.add, color: AppColors.cream),
+        child: Icon(Icons.add, color: Colors.white),
       ),
     );
   }
@@ -73,7 +83,7 @@ class AdminDashboard extends StatelessWidget {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Icon(icon, size: 50, color: AppColors.cream),
+              Icon(icon, size: 50, color: Colors.white),
               SizedBox(height: 10),
               Text(
                 title,
