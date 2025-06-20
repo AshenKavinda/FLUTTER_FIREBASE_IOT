@@ -127,6 +127,25 @@ class _UnitDetailsPageState extends State<UnitDetailsPage> {
   }
 
   Future<void> _softDelete() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: Text('Confirm Delete'),
+            content: Text('Are you sure you want to delete this unit?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: Text('Delete', style: TextStyle(color: Colors.red)),
+              ),
+            ],
+          ),
+    );
+    if (confirm != true) return;
     setState(() => _isLoading = true);
     try {
       await FirebaseFirestore.instance
@@ -137,6 +156,42 @@ class _UnitDetailsPageState extends State<UnitDetailsPage> {
       setState(() => _isDeleted = true);
     } catch (e) {
       Fluttertoast.showToast(msg: 'Error deleting unit: $e');
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
+  Future<void> _restoreUnit() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: Text('Confirm Restore'),
+            content: Text('Are you sure you want to restore this unit?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: Text('Cancel'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: Text('Restore', style: TextStyle(color: Colors.green)),
+              ),
+            ],
+          ),
+    );
+    if (confirm != true) return;
+    setState(() => _isLoading = true);
+    try {
+      await FirebaseFirestore.instance
+          .collection('units')
+          .doc(widget.unitId)
+          .update({'deleted': false, 'timestamp': DateTime.now()});
+      Fluttertoast.showToast(msg: 'Unit restored');
+      setState(() => _isDeleted = false);
+      await _fetchUnit();
+    } catch (e) {
+      Fluttertoast.showToast(msg: 'Error restoring unit: $e');
     } finally {
       setState(() => _isLoading = false);
     }
@@ -165,6 +220,12 @@ class _UnitDetailsPageState extends State<UnitDetailsPage> {
               icon: Icon(Icons.delete, color: Colors.red),
               tooltip: 'Soft Delete',
               onPressed: _softDelete,
+            ),
+          if (_isDeleted)
+            IconButton(
+              icon: Icon(Icons.restore, color: Colors.green),
+              tooltip: 'Restore',
+              onPressed: _restoreUnit,
             ),
         ],
       ),
