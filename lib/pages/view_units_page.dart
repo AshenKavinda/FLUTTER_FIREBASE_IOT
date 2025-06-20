@@ -162,7 +162,6 @@ class _ViewUnitsPageState extends State<ViewUnitsPage> {
                     ),
                   ),
                 ),
-                SizedBox(height: 8),
                 Card(
                   color: Colors.white,
                   child: Padding(
