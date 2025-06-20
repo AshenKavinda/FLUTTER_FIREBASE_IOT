@@ -22,6 +22,15 @@ class _ViewUnitsPageState extends State<ViewUnitsPage> {
   Position? _currentPosition;
   String? _selectedUnitId;
 
+  // Filter options
+  String _selectedFilter = 'All';
+  final List<String> _filterOptions = [
+    'All',
+    'Unavailable Units',
+    'Unavailable Lockers',
+    'Deleted',
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -51,10 +60,28 @@ class _ViewUnitsPageState extends State<ViewUnitsPage> {
 
   Future<void> _loadUnits() async {
     final db = DatabaseService();
-    final docs = await db.getAllUnitDocs();
-    print('Loaded \\${docs.length} units');
-    print(docs.map((doc) => doc.data()).toList());
-
+    List<QueryDocumentSnapshot> docs;
+    if (_selectedFilter == 'Deleted') {
+      QuerySnapshot snapshot =
+          await FirebaseFirestore.instance
+              .collection('units')
+              .where('deleted', isEqualTo: true)
+              .get();
+      docs = snapshot.docs;
+    } else {
+      docs = await db.getAllUnitDocs();
+      if (_selectedFilter == 'Unavailable Units') {
+        docs = docs.where((doc) => doc['status'] == 'unavailable').toList();
+      } else if (_selectedFilter == 'Unavailable Lockers') {
+        docs =
+            docs.where((doc) {
+              final lockers = List<Map<String, dynamic>>.from(
+                doc['lockers'] ?? [],
+              );
+              return lockers.any((locker) => locker['status'] == 'unavailable');
+            }).toList();
+      }
+    }
     Set<Marker> markers = {};
     for (var doc in docs) {
       GeoPoint location = doc['location'];
@@ -94,44 +121,75 @@ class _ViewUnitsPageState extends State<ViewUnitsPage> {
             top: 10,
             left: 10,
             right: 10,
-            child: Card(
-              color: Colors.white,
-              child: Padding(
-                padding: const EdgeInsets.all(8.0),
-                child: Row(
-                  children: [
-                    Expanded(
-                      child: TextField(
-                        controller: _searchController,
-                        decoration: InputDecoration(
-                          hintText: 'Search by Unit ID',
-                          border: InputBorder.none,
-                        ),
-                      ),
-                    ),
-                    IconButton(
-                      icon: Icon(Icons.search, color: AppColors.navyBlue),
-                      onPressed: () async {
-                        if (_searchController.text.isEmpty) return;
-                        final db = DatabaseService();
-                        DocumentSnapshot doc = await db.getUnitById(
-                          _searchController.text.trim(),
-                        );
-                        if (doc.exists) {
-                          GeoPoint location = doc['location'];
-                          _mapController.animateCamera(
-                            CameraUpdate.newLatLngZoom(
-                              LatLng(location.latitude, location.longitude),
-                              16,
+            child: Column(
+              children: [
+                Card(
+                  color: Colors.white,
+                  child: Padding(
+                    padding: const EdgeInsets.all(8.0),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: TextField(
+                            controller: _searchController,
+                            decoration: InputDecoration(
+                              hintText: 'Search by Unit ID',
+                              border: InputBorder.none,
                             ),
-                          );
-                          setState(() => _selectedUnitId = doc.id);
+                          ),
+                        ),
+                        IconButton(
+                          icon: Icon(Icons.search, color: AppColors.navyBlue),
+                          onPressed: () async {
+                            if (_searchController.text.isEmpty) return;
+                            final db = DatabaseService();
+                            DocumentSnapshot doc = await db.getUnitById(
+                              _searchController.text.trim(),
+                            );
+                            if (doc.exists) {
+                              GeoPoint location = doc['location'];
+                              _mapController.animateCamera(
+                                CameraUpdate.newLatLngZoom(
+                                  LatLng(location.latitude, location.longitude),
+                                  16,
+                                ),
+                              );
+                              setState(() => _selectedUnitId = doc.id);
+                            }
+                          },
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                SizedBox(height: 8),
+                Card(
+                  color: Colors.white,
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8.0),
+                    child: DropdownButton<String>(
+                      value: _selectedFilter,
+                      items:
+                          _filterOptions
+                              .map(
+                                (f) =>
+                                    DropdownMenuItem(value: f, child: Text(f)),
+                              )
+                              .toList(),
+                      onChanged: (val) {
+                        if (val != null) {
+                          setState(() {
+                            _selectedFilter = val;
+                          });
+                          _loadUnits();
                         }
                       },
+                      isExpanded: true,
+                      underline: SizedBox(),
                     ),
-                  ],
+                  ),
                 ),
-              ),
+              ],
             ),
           ),
           if (_selectedUnitId != null)
