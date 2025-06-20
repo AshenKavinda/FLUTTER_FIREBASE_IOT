@@ -20,6 +20,17 @@ class _AddUnitPageState extends State<AddUnitPage> {
   Position? _currentPosition;
   bool _isLoading = false;
 
+  // Controllers for latitude and longitude
+  final TextEditingController _latController = TextEditingController();
+  final TextEditingController _lngController = TextEditingController();
+
+  @override
+  void dispose() {
+    _latController.dispose();
+    _lngController.dispose();
+    super.dispose();
+  }
+
   Future<void> _getCurrentLocation() async {
     // Check if location services are enabled
     bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
@@ -53,7 +64,11 @@ class _AddUnitPageState extends State<AddUnitPage> {
       Position position = await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
       );
-      setState(() => _currentPosition = position);
+      setState(() {
+        _currentPosition = position;
+        _latController.text = position.latitude.toStringAsFixed(6);
+        _lngController.text = position.longitude.toStringAsFixed(6);
+      });
     } catch (e) {
       Fluttertoast.showToast(msg: 'Error getting location: $e');
     }
@@ -62,11 +77,12 @@ class _AddUnitPageState extends State<AddUnitPage> {
   Future<void> _saveUnit() async {
     print('DEBUG: Saving unit with $_lockersCount lockers');
     if (!_formKey.currentState!.validate()) return;
-    if (_currentPosition == null) {
-      Fluttertoast.showToast(msg: 'Please get location first');
+    double? lat = double.tryParse(_latController.text);
+    double? lng = double.tryParse(_lngController.text);
+    if (lat == null || lng == null) {
+      Fluttertoast.showToast(msg: 'Please enter valid latitude and longitude');
       return;
     }
-
     setState(() => _isLoading = true);
     print(
       'DEBUG: Saving unit with $_lockersCount lockers at '
@@ -78,10 +94,7 @@ class _AddUnitPageState extends State<AddUnitPage> {
     });
 
     Map<String, dynamic> unitData = {
-      'location': GeoPoint(
-        _currentPosition!.latitude,
-        _currentPosition!.longitude,
-      ),
+      'location': GeoPoint(lat, lng),
       'lockers': lockers,
       'status': _isAvailable ? 'available' : 'unavailable',
       'timestamp': DateTime.now(),
@@ -128,12 +141,74 @@ class _AddUnitPageState extends State<AddUnitPage> {
                         style: Theme.of(context).textTheme.titleLarge,
                       ),
                       SizedBox(height: 10),
-                      if (_currentPosition != null)
-                        Text(
-                          'Lat: ${_currentPosition!.latitude.toStringAsFixed(6)}\n'
-                          'Lng: ${_currentPosition!.longitude.toStringAsFixed(6)}',
-                          style: TextStyle(color: Colors.white),
-                        ),
+                      Row(
+                        children: [
+                          Expanded(
+                            child: TextFormField(
+                              controller: _latController,
+                              decoration: InputDecoration(
+                                labelText: 'Latitude',
+                                hintText: 'e.g. 6.9271',
+                                border: OutlineInputBorder(),
+                                filled: true,
+                                fillColor: Colors.white,
+                              ),
+                              keyboardType: TextInputType.numberWithOptions(
+                                decimal: true,
+                              ),
+                              validator: (value) {
+                                final v = double.tryParse(value ?? '');
+                                if (v == null) return 'Enter valid latitude';
+                                if (v < -90 || v > 90)
+                                  return 'Latitude must be -90 to 90';
+                                return null;
+                              },
+                            ),
+                          ),
+                          SizedBox(width: 10),
+                          Expanded(
+                            child: TextFormField(
+                              controller: _lngController,
+                              decoration: InputDecoration(
+                                labelText: 'Longitude',
+                                hintText: 'e.g. 79.8612',
+                                border: OutlineInputBorder(),
+                                filled: true,
+                                fillColor: Colors.white,
+                              ),
+                              keyboardType: TextInputType.numberWithOptions(
+                                decimal: true,
+                              ),
+                              validator: (value) {
+                                final v = double.tryParse(value ?? '');
+                                if (v == null) return 'Enter valid longitude';
+                                if (v < -180 || v > 180)
+                                  return 'Longitude must be -180 to 180';
+                                return null;
+                              },
+                            ),
+                          ),
+                          SizedBox(width: 8),
+                          Card(
+                            color: Colors.red[100],
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: IconButton(
+                              icon: Icon(
+                                Icons.clear,
+                                color: Colors.red[800],
+                                size: 20,
+                              ),
+                              tooltip: 'Clear',
+                              onPressed: () {
+                                _latController.clear();
+                                _lngController.clear();
+                              },
+                            ),
+                          ),
+                        ],
+                      ),
                       SizedBox(height: 10),
                       ElevatedButton(
                         onPressed: _getCurrentLocation,
@@ -182,7 +257,7 @@ class _AddUnitPageState extends State<AddUnitPage> {
                 subtitle: Text(_isAvailable ? 'Available' : 'Unavailable'),
                 value: _isAvailable,
                 activeColor: AppColors.tealBlue,
-                inactiveTrackColor: AppColors.navyBlue.withOpacity(0.5),
+                inactiveTrackColor: AppColors.navyBlue,
                 onChanged: (value) => setState(() => _isAvailable = value),
               ),
               SizedBox(height: 30),
