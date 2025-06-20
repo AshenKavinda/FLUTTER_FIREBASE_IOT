@@ -1,13 +1,13 @@
 {
   "project_info": {
-    "project_number": "240831496510",
-    "project_id": "loker-3a05b",
-    "storage_bucket": "loker-3a05b.firebasestorage.app"
+    "project_number": "360614184890",
+    "project_id": "iot-loker-app-nibm",
+    "storage_bucket": "iot-loker-app-nibm.firebasestorage.app"
   },
   "client": [
     {
       "client_info": {
-        "mobilesdk_app_id": "1:240831496510:android:dc88203cdc82cb6879ec6f",
+        "mobilesdk_app_id": "1:360614184890:android:7cea087e42ef0eed57bf83",
         "android_client_info": {
           "package_name": "com.example.flutter_firebase_iot"
         }
@@ -15,7 +15,7 @@
       "oauth_client": [],
       "api_key": [
         {
-          "current_key": "AIzaSyAwQ9LWYuGXIiAPRG4V5YuHxvgAeuh_yow"
+          "current_key": "AIzaSyDOZfz0t0t7CFZqR13lL5dMnCZRxY1AwkA"
         }
       ],
       "services": {

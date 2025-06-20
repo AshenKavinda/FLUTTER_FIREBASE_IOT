@@ -1,18 +1,16 @@
 import 'package:flutter/material.dart';
 
 class AppColors {
-  static const Color navyBlue = Color(0xFF001F3F);
-  static const Color tealBlue = Color(0xFF3A6D8C);
-  static const Color skyBlue = Color(0xFF6A9AB0);
-  static const Color cream = Color(0xFFEAD8B1);
+  static const Color navyBlue = Color.fromARGB(255, 4, 91, 179);
+  static const Color tealBlue = Color.fromARGB(255, 0, 157, 255);
 }
 
 final ThemeData appTheme = ThemeData(
   primaryColor: AppColors.navyBlue,
-  scaffoldBackgroundColor: AppColors.cream,
+  scaffoldBackgroundColor: Colors.white,
   appBarTheme: AppBarTheme(
     backgroundColor: AppColors.navyBlue,
-    foregroundColor: AppColors.cream,
+    foregroundColor: Colors.white,
     elevation: 0,
   ),
   cardTheme: CardTheme(
@@ -24,7 +22,7 @@ final ThemeData appTheme = ThemeData(
   textTheme: TextTheme(
     titleLarge: TextStyle(
       // Replaces headline6
-      color: AppColors.cream,
+      color: Colors.white,
       fontWeight: FontWeight.bold,
       fontSize: 20,
     ),
