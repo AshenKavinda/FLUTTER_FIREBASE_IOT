@@ -15,12 +15,14 @@ class DatabaseService {
     }
   }
 
-  /// Get all units, returning only location and id fields
-  Future<List<Map<String, dynamic>>> getAllUnits() async {
+  /// Get all unit documents (for marker loading)
+  Future<List<QueryDocumentSnapshot>> getAllUnitDocs() async {
     QuerySnapshot snapshot = await _unitsCollection.get();
-    return snapshot.docs.map((doc) {
-      final data = doc.data() as Map<String, dynamic>;
-      return {'location': data['location'], 'id': data['id']};
-    }).toList();
+    return snapshot.docs;
+  }
+
+  /// Get a unit document by its Firestore document ID
+  Future<DocumentSnapshot> getUnitById(String id) async {
+    return await _unitsCollection.doc(id).get();
   }
 }

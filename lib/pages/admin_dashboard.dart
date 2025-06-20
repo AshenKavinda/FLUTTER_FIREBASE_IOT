@@ -57,15 +57,6 @@ class AdminDashboard extends StatelessWidget {
           ],
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed:
-            () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => AddUnitPage()),
-            ),
-        backgroundColor: AppColors.navyBlue,
-        child: Icon(Icons.add, color: Colors.white),
-      ),
     );
   }
 

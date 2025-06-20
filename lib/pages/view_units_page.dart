@@ -6,6 +6,7 @@ import 'package:flutter_polyline_points/flutter_polyline_points.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../utils/theme.dart';
+import '../services/database.dart';
 
 class ViewUnitsPage extends StatefulWidget {
   @override
@@ -49,13 +50,13 @@ class _ViewUnitsPageState extends State<ViewUnitsPage> {
   }
 
   Future<void> _loadUnits() async {
-    QuerySnapshot snapshot =
-        await FirebaseFirestore.instance.collection('units').get();
-    print('Loaded ${snapshot.docs.length} units');
-    print(snapshot.docs.map((doc) => doc.data()).toList());
+    final db = DatabaseService();
+    final docs = await db.getAllUnitDocs();
+    print('Loaded \\${docs.length} units');
+    print(docs.map((doc) => doc.data()).toList());
 
     Set<Marker> markers = {};
-    snapshot.docs.forEach((doc) {
+    for (var doc in docs) {
       GeoPoint location = doc['location'];
       markers.add(
         Marker(
@@ -65,8 +66,7 @@ class _ViewUnitsPageState extends State<ViewUnitsPage> {
           onTap: () => setState(() => _selectedUnitId = doc.id),
         ),
       );
-    });
-
+    }
     setState(() => _markers = markers);
   }
 
@@ -113,11 +113,10 @@ class _ViewUnitsPageState extends State<ViewUnitsPage> {
                       icon: Icon(Icons.search, color: AppColors.navyBlue),
                       onPressed: () async {
                         if (_searchController.text.isEmpty) return;
-                        DocumentSnapshot doc =
-                            await FirebaseFirestore.instance
-                                .collection('units')
-                                .doc(_searchController.text.trim())
-                                .get();
+                        final db = DatabaseService();
+                        DocumentSnapshot doc = await db.getUnitById(
+                          _searchController.text.trim(),
+                        );
                         if (doc.exists) {
                           GeoPoint location = doc['location'];
                           _mapController.animateCamera(
@@ -179,25 +178,25 @@ class _ViewUnitsPageState extends State<ViewUnitsPage> {
             child: Icon(Icons.map, color: Colors.white),
             onPressed: () async {
               if (_selectedUnitId == null) return;
-              DocumentSnapshot doc =
-                  await FirebaseFirestore.instance
-                      .collection('units')
-                      .doc(_selectedUnitId)
-                      .get();
+              final db = DatabaseService();
+              DocumentSnapshot doc = await db.getUnitById(_selectedUnitId!);
               GeoPoint destination = doc['location'];
               final Uri url = Uri.parse(
-                'https://www.google.com/maps/dir/?api=1&destination=${destination.latitude},${destination.longitude}&travelmode=driving',
+                'https://www.google.com/maps/dir/?api=1&destination=\${destination.latitude},\${destination.longitude}&travelmode=driving',
               );
-              // ignore: deprecated_member_use
               if (await canLaunchUrl(url)) {
-                await launchUrl(
-                  url,
-                  mode: LaunchMode.externalApplication,
-                ); // <-- important
+                await launchUrl(url, mode: LaunchMode.externalApplication);
               } else {
                 throw 'Could not launch $url';
               }
             },
+          ),
+          SizedBox(height: 10),
+          FloatingActionButton(
+            heroTag: 'add_unit',
+            backgroundColor: AppColors.navyBlue,
+            child: Icon(Icons.add, color: Colors.white),
+            onPressed: () => Navigator.pushNamed(context, '/add-unit'),
           ),
         ],
       ),
