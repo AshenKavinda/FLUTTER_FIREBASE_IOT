@@ -17,7 +17,8 @@ class DatabaseService {
 
   /// Get all unit documents (for marker loading)
   Future<List<QueryDocumentSnapshot>> getAllUnitDocs() async {
-    QuerySnapshot snapshot = await _unitsCollection.get();
+    QuerySnapshot snapshot =
+        await _unitsCollection.where('deleted', isEqualTo: false).get();
     return snapshot.docs;
   }
 
