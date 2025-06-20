@@ -195,25 +195,39 @@ class _ViewUnitsPageState extends State<ViewUnitsPage> {
             Positioned(
               bottom: 20,
               left: 20,
-              right: 20,
-              child: ElevatedButton(
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.navyBlue,
-                  padding: EdgeInsets.symmetric(vertical: 16),
-                ),
-                child: Text(
-                  'View Details',
-                  style: TextStyle(color: Colors.white),
-                ),
-                onPressed:
-                    () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                        builder:
-                            (context) =>
-                                UnitDetailsPage(unitId: _selectedUnitId!),
-                      ),
+              child: SizedBox(
+                width: 140, // medium size
+                height: 48,
+                child: ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.navyBlue,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8), // square-ish
                     ),
+                    alignment: Alignment.centerLeft, // left align
+                    padding: EdgeInsets.symmetric(horizontal: 16),
+                  ),
+                  icon: Icon(
+                    Icons.visibility,
+                    color: Colors.white,
+                  ), // proper icon
+                  label: Text(
+                    'View',
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  onPressed:
+                      () => Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder:
+                              (context) =>
+                                  UnitDetailsPage(unitId: _selectedUnitId!),
+                        ),
+                      ),
+                ),
               ),
             ),
         ],
