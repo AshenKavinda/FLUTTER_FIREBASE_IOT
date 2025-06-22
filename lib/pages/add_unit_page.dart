@@ -97,6 +97,7 @@ class _AddUnitPageState extends State<AddUnitPage> {
         'confirmation': false,
         'price': 0,
         'timestamp': DateTime.now(),
+        'reserved': false,
       };
     });
 
