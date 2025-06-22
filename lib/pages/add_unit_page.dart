@@ -95,6 +95,8 @@ class _AddUnitPageState extends State<AddUnitPage> {
         'status': 'available',
         'loked': false,
         'confiremation': false,
+        'price': 0,
+        'timestamp': DateTime.now(),
       };
     });
 
