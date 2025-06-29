@@ -90,7 +90,15 @@ class _AddUnitPageState extends State<AddUnitPage> {
     );
     // Generate lockers list
     List<Map<String, dynamic>> lockers = List.generate(_lockersCount, (index) {
-      return {'id': randomAlphaNumeric(8), 'status': 'available'};
+      return {
+        'id': randomAlphaNumeric(8),
+        'status': 'available',
+        'locked': false,
+        'confirmation': false,
+        'price': 0,
+        'timestamp': DateTime.now(),
+        'reserved': false,
+      };
     });
 
     Map<String, dynamic> unitData = {

@@ -22,11 +22,15 @@ class _UnitDetailsPageState extends State<UnitDetailsPage> {
   bool _isDeleted = false;
   List<Map<String, dynamic>> _lockers = [];
   Map<String, dynamic>? _unitData;
+  List<TextEditingController> _priceControllers = [];
 
   @override
   void dispose() {
     _latController.dispose();
     _lngController.dispose();
+    for (final c in _priceControllers) {
+      c.dispose();
+    }
     super.dispose();
   }
 
@@ -52,6 +56,16 @@ class _UnitDetailsPageState extends State<UnitDetailsPage> {
       _isAvailable = _unitData!['status'] == 'available';
       _isDeleted = _unitData!['deleted'] == true;
       _lockers = List<Map<String, dynamic>>.from(_unitData!['lockers'] ?? []);
+      // Initialize price controllers
+      _priceControllers.forEach((c) => c.dispose());
+      _priceControllers =
+          _lockers
+              .map(
+                (locker) => TextEditingController(
+                  text: locker['price']?.toString() ?? '0',
+                ),
+              )
+              .toList();
       setState(() {});
     } catch (e) {
       Fluttertoast.showToast(msg: 'Error loading unit: $e');
@@ -105,6 +119,12 @@ class _UnitDetailsPageState extends State<UnitDetailsPage> {
       return;
     }
     setState(() => _isLoading = true);
+    // Update price from controllers and timestamp for all lockers
+    for (int i = 0; i < _lockers.length; i++) {
+      double? price = double.tryParse(_priceControllers[i].text);
+      _lockers[i]['price'] = price ?? 0;
+      _lockers[i]['timestamp'] = DateTime.now();
+    }
     Map<String, dynamic> updatedData = {
       'location': GeoPoint(lat, lng),
       'lockers': _lockers,
@@ -347,8 +367,45 @@ class _UnitDetailsPageState extends State<UnitDetailsPage> {
               ..._lockers.asMap().entries.map((entry) {
                 int idx = entry.key;
                 var locker = entry.value;
+                final priceController =
+                    _priceControllers.length > idx
+                        ? _priceControllers[idx]
+                        : TextEditingController(
+                          text: locker['price']?.toString() ?? '0',
+                        );
                 return ListTile(
                   title: Text('Locker ${locker['id']}'),
+                  subtitle: Row(
+                    children: [
+                      Text('Price: '),
+                      SizedBox(
+                        width: 80,
+                        child: TextFormField(
+                          controller: priceController,
+                          keyboardType: TextInputType.numberWithOptions(
+                            decimal: true,
+                          ),
+                          decoration: InputDecoration(
+                            border: OutlineInputBorder(),
+                            isDense: true,
+                            contentPadding: EdgeInsets.symmetric(
+                              vertical: 8,
+                              horizontal: 8,
+                            ),
+                          ),
+                          onChanged: (val) {
+                            setState(() {
+                              double? price = double.tryParse(val);
+                              if (price != null) {
+                                _lockers[idx]['price'] = price;
+                                _lockers[idx]['timestamp'] = DateTime.now();
+                              }
+                            });
+                          },
+                        ),
+                      ),
+                    ],
+                  ),
                   trailing: DropdownButton<String>(
                     value: locker['status'],
                     items:
