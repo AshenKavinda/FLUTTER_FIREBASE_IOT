@@ -93,7 +93,7 @@ class _AddUnitPageState extends State<AddUnitPage> {
       return {
         'id': randomAlphaNumeric(8),
         'status': 'available',
-        'locked': false,
+        'locked': true,
         'confirmation': false,
         'price': 0,
         'timestamp': DateTime.now(),
