@@ -3,7 +3,6 @@ import 'package:flutter_firebase_iot/pages/unit_details_page.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:flutter_polyline_points/flutter_polyline_points.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../utils/theme.dart';
 import '../services/database.dart';
@@ -36,6 +35,24 @@ class _ViewUnitsPageState extends State<ViewUnitsPage> {
     super.initState();
     _getCurrentLocation();
     _loadUnits();
+    _testDatabaseConnection();
+  }
+
+  Future<void> _testDatabaseConnection() async {
+    try {
+      print('DEBUG: Testing database connection...');
+      final db = DatabaseService();
+      List<MapEntry<String, Map<String, dynamic>>> units =
+          await db.getAllUnitDocs();
+      print(
+        'DEBUG: Database connection successful. Found ${units.length} units.',
+      );
+      for (var unit in units) {
+        print('DEBUG: Unit ID: ${unit.key}, Data: ${unit.value}');
+      }
+    } catch (e) {
+      print('DEBUG: Database connection failed: $e');
+    }
   }
 
   Future<void> _getCurrentLocation() async {
@@ -59,42 +76,54 @@ class _ViewUnitsPageState extends State<ViewUnitsPage> {
   }
 
   Future<void> _loadUnits() async {
+    print('DEBUG: Loading units with filter: $_selectedFilter');
     final db = DatabaseService();
-    List<QueryDocumentSnapshot> docs;
+    List<MapEntry<String, Map<String, dynamic>>> docs;
+
     if (_selectedFilter == 'Deleted') {
-      QuerySnapshot snapshot =
-          await FirebaseFirestore.instance
-              .collection('units')
-              .where('deleted', isEqualTo: true)
-              .get();
-      docs = snapshot.docs;
+      docs = await db.getDeletedUnits();
     } else {
       docs = await db.getAllUnitDocs();
       if (_selectedFilter == 'Unavailable Units') {
-        docs = docs.where((doc) => doc['status'] == 'unavailable').toList();
+        docs =
+            docs.where((doc) => doc.value['status'] == 'unavailable').toList();
       } else if (_selectedFilter == 'Unavailable Lockers') {
         docs =
             docs.where((doc) {
-              final lockers = List<Map<String, dynamic>>.from(
-                doc['lockers'] ?? [],
-              );
+              final lockersData = doc.value['lockers'] ?? [];
+              final lockers =
+                  (lockersData as List)
+                      .map((locker) => Map<String, dynamic>.from(locker as Map))
+                      .toList();
               return lockers.any((locker) => locker['status'] == 'unavailable');
             }).toList();
       }
     }
+
+    print('DEBUG: Found ${docs.length} units');
     Set<Marker> markers = {};
     for (var doc in docs) {
-      GeoPoint location = doc['location'];
+      print('DEBUG: Processing unit ID: ${doc.key}');
+      Map<String, dynamic> location = Map<String, dynamic>.from(
+        doc.value['location'] as Map,
+      );
+      double lat = location['latitude'].toDouble();
+      double lng = location['longitude'].toDouble();
+
       markers.add(
         Marker(
-          markerId: MarkerId(doc.id),
-          position: LatLng(location.latitude, location.longitude),
+          markerId: MarkerId(doc.key),
+          position: LatLng(lat, lng),
           infoWindow: InfoWindow(title: 'loker'),
-          onTap: () => setState(() => _selectedUnitId = doc.id),
+          onTap: () {
+            print('DEBUG: Marker tapped for unit ID: ${doc.key}');
+            setState(() => _selectedUnitId = doc.key);
+          },
         ),
       );
     }
     setState(() => _markers = markers);
+    print('DEBUG: Set ${markers.length} markers on map');
   }
 
   @override
@@ -143,18 +172,28 @@ class _ViewUnitsPageState extends State<ViewUnitsPage> {
                           onPressed: () async {
                             if (_searchController.text.isEmpty) return;
                             final db = DatabaseService();
-                            DocumentSnapshot doc = await db.getUnitById(
+                            Map<String, dynamic>? doc = await db.getUnitById(
                               _searchController.text.trim(),
                             );
-                            if (doc.exists) {
-                              GeoPoint location = doc['location'];
+                            if (doc != null) {
+                              Map<String, dynamic> location =
+                                  Map<String, dynamic>.from(
+                                    doc['location'] as Map,
+                                  );
+                              double lat = location['latitude'].toDouble();
+                              double lng = location['longitude'].toDouble();
+
                               _mapController.animateCamera(
                                 CameraUpdate.newLatLngZoom(
-                                  LatLng(location.latitude, location.longitude),
+                                  LatLng(lat, lng),
                                   16,
                                 ),
                               );
-                              setState(() => _selectedUnitId = doc.id);
+                              setState(
+                                () =>
+                                    _selectedUnitId =
+                                        _searchController.text.trim(),
+                              );
                             }
                           },
                         ),
@@ -218,15 +257,19 @@ class _ViewUnitsPageState extends State<ViewUnitsPage> {
                       fontWeight: FontWeight.w600,
                     ),
                   ),
-                  onPressed:
-                      () => Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder:
-                              (context) =>
-                                  UnitDetailsPage(unitId: _selectedUnitId!),
-                        ),
+                  onPressed: () {
+                    print(
+                      'DEBUG: Navigating to UnitDetailsPage with ID: $_selectedUnitId',
+                    );
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder:
+                            (context) =>
+                                UnitDetailsPage(unitId: _selectedUnitId!),
                       ),
+                    );
+                  },
                 ),
               ),
             ),
@@ -250,15 +293,24 @@ class _ViewUnitsPageState extends State<ViewUnitsPage> {
             onPressed: () async {
               if (_selectedUnitId == null) return;
               final db = DatabaseService();
-              DocumentSnapshot doc = await db.getUnitById(_selectedUnitId!);
-              GeoPoint destination = doc['location'];
-              final Uri url = Uri.parse(
-                'https://www.google.com/maps/dir/?api=1&destination=\${destination.latitude},\${destination.longitude}&travelmode=driving',
+              Map<String, dynamic>? doc = await db.getUnitById(
+                _selectedUnitId!,
               );
-              if (await canLaunchUrl(url)) {
-                await launchUrl(url, mode: LaunchMode.externalApplication);
-              } else {
-                throw 'Could not launch $url';
+              if (doc != null) {
+                Map<String, dynamic> destination = Map<String, dynamic>.from(
+                  doc['location'] as Map,
+                );
+                double lat = destination['latitude'].toDouble();
+                double lng = destination['longitude'].toDouble();
+
+                final Uri url = Uri.parse(
+                  'https://www.google.com/maps/dir/?api=1&destination=$lat,$lng&travelmode=driving',
+                );
+                if (await canLaunchUrl(url)) {
+                  await launchUrl(url, mode: LaunchMode.externalApplication);
+                } else {
+                  throw 'Could not launch $url';
+                }
               }
             },
           ),
