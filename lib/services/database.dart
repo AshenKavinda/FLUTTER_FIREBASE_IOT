@@ -44,19 +44,17 @@ class DatabaseService {
       Map<dynamic, dynamic> unitsMap =
           event.snapshot.value as Map<dynamic, dynamic>;
 
-      return unitsMap.entries
-          .map(
-            (entry) {
-              Map<String, dynamic> unitData = Map<String, dynamic>.from(entry.value as Map);
-              // Convert lockers object to list format for UI compatibility
-              unitData = _convertLockersObjectToList(unitData);
-              return MapEntry<String, Map<String, dynamic>>(
-                entry.key.toString(),
-                unitData,
-              );
-            },
-          )
-          .toList();
+      return unitsMap.entries.map((entry) {
+        Map<String, dynamic> unitData = Map<String, dynamic>.from(
+          entry.value as Map,
+        );
+        // Convert lockers object to list format for UI compatibility
+        unitData = _convertLockersObjectToList(unitData);
+        return MapEntry<String, Map<String, dynamic>>(
+          entry.key.toString(),
+          unitData,
+        );
+      }).toList();
     } catch (e) {
       throw "Error fetching units: $e";
     }
@@ -121,19 +119,17 @@ class DatabaseService {
       Map<dynamic, dynamic> unitsMap =
           event.snapshot.value as Map<dynamic, dynamic>;
 
-      return unitsMap.entries
-          .map(
-            (entry) {
-              Map<String, dynamic> unitData = Map<String, dynamic>.from(entry.value as Map);
-              // Convert lockers object to list format for UI compatibility
-              unitData = _convertLockersObjectToList(unitData);
-              return MapEntry<String, Map<String, dynamic>>(
-                entry.key.toString(),
-                unitData,
-              );
-            },
-          )
-          .toList();
+      return unitsMap.entries.map((entry) {
+        Map<String, dynamic> unitData = Map<String, dynamic>.from(
+          entry.value as Map,
+        );
+        // Convert lockers object to list format for UI compatibility
+        unitData = _convertLockersObjectToList(unitData);
+        return MapEntry<String, Map<String, dynamic>>(
+          entry.key.toString(),
+          unitData,
+        );
+      }).toList();
     } catch (e) {
       throw "Error fetching deleted units: $e";
     }
@@ -194,7 +190,9 @@ class DatabaseService {
     Map<String, dynamic> result = Map.from(data);
 
     if (result['lockers'] != null && result['lockers'] is Map) {
-      Map<String, dynamic> lockersObject = Map<String, dynamic>.from(result['lockers'] as Map);
+      Map<String, dynamic> lockersObject = Map<String, dynamic>.from(
+        result['lockers'] as Map,
+      );
       List<Map<String, dynamic>> lockersList = [];
 
       lockersObject.forEach((key, value) {
@@ -213,12 +211,20 @@ class DatabaseService {
   }
 
   /// Update a specific locker in a unit (using object structure)
-  Future<void> updateLocker(String unitId, String lockerId, Map<String, dynamic> lockerData) async {
+  Future<void> updateLocker(
+    String unitId,
+    String lockerId,
+    Map<String, dynamic> lockerData,
+  ) async {
     try {
       // Convert DateTime objects to ISO strings
       lockerData = _convertDateTimesToStrings(lockerData);
-      
-      await _unitsRef.child(unitId).child('lockers').child(lockerId).update(lockerData);
+
+      await _unitsRef
+          .child(unitId)
+          .child('lockers')
+          .child(lockerId)
+          .update(lockerData);
     } catch (e) {
       throw "Error updating locker: $e";
     }
@@ -229,11 +235,15 @@ class DatabaseService {
     try {
       String lockerId = lockerData['id'] ?? _generateLockerId();
       lockerData['id'] = lockerId;
-      
+
       // Convert DateTime objects to ISO strings
       lockerData = _convertDateTimesToStrings(lockerData);
-      
-      await _unitsRef.child(unitId).child('lockers').child(lockerId).set(lockerData);
+
+      await _unitsRef
+          .child(unitId)
+          .child('lockers')
+          .child(lockerId)
+          .set(lockerData);
     } catch (e) {
       throw "Error adding locker: $e";
     }

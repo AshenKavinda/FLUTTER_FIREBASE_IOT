@@ -30,7 +30,7 @@ class _DatabaseTestPageState extends State<DatabaseTestPage> {
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             SizedBox(height: 20),
-            
+
             // Migration Section
             Card(
               child: Padding(
@@ -38,7 +38,10 @@ class _DatabaseTestPageState extends State<DatabaseTestPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Text('Migration Tools', style: TextStyle(fontWeight: FontWeight.bold)),
+                    Text(
+                      'Migration Tools',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
                     SizedBox(height: 10),
                     ElevatedButton(
                       onPressed: _isLoading ? null : _previewMigration,
@@ -48,15 +51,17 @@ class _DatabaseTestPageState extends State<DatabaseTestPage> {
                     ElevatedButton(
                       onPressed: _isLoading ? null : _runMigration,
                       child: Text('Run Migration to Object Structure'),
-                      style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.orange,
+                      ),
                     ),
                   ],
                 ),
               ),
             ),
-            
+
             SizedBox(height: 20),
-            
+
             // Test Section
             Card(
               child: Padding(
@@ -64,7 +69,10 @@ class _DatabaseTestPageState extends State<DatabaseTestPage> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Text('Test Operations', style: TextStyle(fontWeight: FontWeight.bold)),
+                    Text(
+                      'Test Operations',
+                      style: TextStyle(fontWeight: FontWeight.bold),
+                    ),
                     SizedBox(height: 10),
                     TextField(
                       controller: _unitIdController,
@@ -113,7 +121,9 @@ class _DatabaseTestPageState extends State<DatabaseTestPage> {
                           child: ElevatedButton(
                             onPressed: _isLoading ? null : _testRemoveLocker,
                             child: Text('Remove Locker'),
-                            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.red,
+                            ),
                           ),
                         ),
                       ],
@@ -122,9 +132,9 @@ class _DatabaseTestPageState extends State<DatabaseTestPage> {
                 ),
               ),
             ),
-            
+
             SizedBox(height: 20),
-            
+
             // Results Section
             Expanded(
               child: Card(
@@ -133,7 +143,10 @@ class _DatabaseTestPageState extends State<DatabaseTestPage> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.stretch,
                     children: [
-                      Text('Results', style: TextStyle(fontWeight: FontWeight.bold)),
+                      Text(
+                        'Results',
+                        style: TextStyle(fontWeight: FontWeight.bold),
+                      ),
                       SizedBox(height: 10),
                       Expanded(
                         child: Container(
@@ -174,7 +187,9 @@ class _DatabaseTestPageState extends State<DatabaseTestPage> {
 
     try {
       await DataMigration.previewMigration();
-      setState(() => _result += '\n✅ Preview completed. Check console for details.');
+      setState(
+        () => _result += '\n✅ Preview completed. Check console for details.',
+      );
     } catch (e) {
       setState(() => _result += '\n❌ Preview failed: $e');
     } finally {
@@ -212,18 +227,19 @@ class _DatabaseTestPageState extends State<DatabaseTestPage> {
     try {
       final db = DatabaseService();
       Map<String, dynamic>? unit = await db.getUnitById(_unitIdController.text);
-      
+
       if (unit != null) {
         setState(() {
           _result += '✅ Unit found:\n';
           _result += '  Location: ${unit['location']}\n';
           _result += '  Status: ${unit['status']}\n';
           _result += '  Lockers (${unit['lockers']?.length ?? 0}):\n';
-          
+
           if (unit['lockers'] is List) {
             List lockers = unit['lockers'] as List;
             for (var locker in lockers) {
-              _result += '    - ${locker['id']}: ${locker['status']} (locked: ${locker['locked']})\n';
+              _result +=
+                  '    - ${locker['id']}: ${locker['status']} (locked: ${locker['locked']})\n';
             }
           }
         });
@@ -251,7 +267,7 @@ class _DatabaseTestPageState extends State<DatabaseTestPage> {
     try {
       final db = DatabaseService();
       String newLockerId = 'test_${DateTime.now().millisecondsSinceEpoch}';
-      
+
       await db.addLocker(_unitIdController.text, {
         'id': newLockerId,
         'status': 'available',
@@ -261,7 +277,7 @@ class _DatabaseTestPageState extends State<DatabaseTestPage> {
         'price': 100,
         'timestamp': DateTime.now().toIso8601String(),
       });
-      
+
       setState(() => _result += '✅ Added locker: $newLockerId\n');
     } catch (e) {
       setState(() => _result += '❌ Error adding locker: $e\n');
@@ -278,20 +294,23 @@ class _DatabaseTestPageState extends State<DatabaseTestPage> {
 
     setState(() {
       _isLoading = true;
-      _result += '\nUpdating locker ${_lockerIdController.text} in unit ${_unitIdController.text}...\n';
+      _result +=
+          '\nUpdating locker ${_lockerIdController.text} in unit ${_unitIdController.text}...\n';
     });
 
     try {
       final db = DatabaseService();
-      
+
       await db.updateLocker(_unitIdController.text, _lockerIdController.text, {
         'status': 'reserved',
         'locked': true,
         'price': 150,
         'timestamp': DateTime.now().toIso8601String(),
       });
-      
-      setState(() => _result += '✅ Updated locker: ${_lockerIdController.text}\n');
+
+      setState(
+        () => _result += '✅ Updated locker: ${_lockerIdController.text}\n',
+      );
     } catch (e) {
       setState(() => _result += '❌ Error updating locker: $e\n');
     } finally {
@@ -307,15 +326,18 @@ class _DatabaseTestPageState extends State<DatabaseTestPage> {
 
     setState(() {
       _isLoading = true;
-      _result += '\nRemoving locker ${_lockerIdController.text} from unit ${_unitIdController.text}...\n';
+      _result +=
+          '\nRemoving locker ${_lockerIdController.text} from unit ${_unitIdController.text}...\n';
     });
 
     try {
       final db = DatabaseService();
-      
+
       await db.removeLocker(_unitIdController.text, _lockerIdController.text);
-      
-      setState(() => _result += '✅ Removed locker: ${_lockerIdController.text}\n');
+
+      setState(
+        () => _result += '✅ Removed locker: ${_lockerIdController.text}\n',
+      );
     } catch (e) {
       setState(() => _result += '❌ Error removing locker: $e\n');
     } finally {
