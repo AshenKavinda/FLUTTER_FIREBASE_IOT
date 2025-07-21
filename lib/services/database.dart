@@ -16,6 +16,9 @@ class DatabaseService {
         unitData['location'] = location.toMap();
       }
 
+      // Convert lockers list to object format for database storage
+      unitData = _convertLockersListToObject(unitData);
+
       // Convert DateTime objects to ISO strings
       unitData = _convertDateTimesToStrings(unitData);
 
@@ -43,10 +46,15 @@ class DatabaseService {
 
       return unitsMap.entries
           .map(
-            (entry) => MapEntry<String, Map<String, dynamic>>(
-              entry.key.toString(),
-              Map<String, dynamic>.from(entry.value as Map),
-            ),
+            (entry) {
+              Map<String, dynamic> unitData = Map<String, dynamic>.from(entry.value as Map);
+              // Convert lockers object to list format for UI compatibility
+              unitData = _convertLockersObjectToList(unitData);
+              return MapEntry<String, Map<String, dynamic>>(
+                entry.key.toString(),
+                unitData,
+              );
+            },
           )
           .toList();
     } catch (e) {
@@ -69,6 +77,8 @@ class DatabaseService {
       Map<String, dynamic> result = Map<String, dynamic>.from(
         event.snapshot.value as Map,
       );
+      // Convert lockers object to list format for UI compatibility
+      result = _convertLockersObjectToList(result);
       print('DEBUG: Returning data: $result');
       return result;
     } catch (e) {
@@ -85,6 +95,9 @@ class DatabaseService {
         GeoPoint location = data['location'];
         data['location'] = location.toMap();
       }
+
+      // Convert lockers list to object format for database storage
+      data = _convertLockersListToObject(data);
 
       // Convert DateTime objects to ISO strings
       data = _convertDateTimesToStrings(data);
@@ -110,10 +123,15 @@ class DatabaseService {
 
       return unitsMap.entries
           .map(
-            (entry) => MapEntry<String, Map<String, dynamic>>(
-              entry.key.toString(),
-              Map<String, dynamic>.from(entry.value as Map),
-            ),
+            (entry) {
+              Map<String, dynamic> unitData = Map<String, dynamic>.from(entry.value as Map);
+              // Convert lockers object to list format for UI compatibility
+              unitData = _convertLockersObjectToList(unitData);
+              return MapEntry<String, Map<String, dynamic>>(
+                entry.key.toString(),
+                unitData,
+              );
+            },
           )
           .toList();
     } catch (e) {
@@ -144,5 +162,94 @@ class DatabaseService {
     });
 
     return result;
+  }
+
+  /// Convert lockers list format to object format for database storage
+  /// Input: {"lockers": [{"id": "123", "locked": false}, {"id": "456", "locked": true}]}
+  /// Output: {"lockers": {"123": {"id": "123", "locked": false}, "456": {"id": "456", "locked": true}}}
+  Map<String, dynamic> _convertLockersListToObject(Map<String, dynamic> data) {
+    Map<String, dynamic> result = Map.from(data);
+
+    if (result['lockers'] != null && result['lockers'] is List) {
+      List<dynamic> lockersList = result['lockers'] as List;
+      Map<String, dynamic> lockersObject = {};
+
+      for (var locker in lockersList) {
+        if (locker is Map<String, dynamic> && locker['id'] != null) {
+          String lockerId = locker['id'].toString();
+          lockersObject[lockerId] = Map<String, dynamic>.from(locker);
+        }
+      }
+
+      result['lockers'] = lockersObject;
+    }
+
+    return result;
+  }
+
+  /// Convert lockers object format to list format for UI compatibility
+  /// Input: {"lockers": {"123": {"id": "123", "locked": false}, "456": {"id": "456", "locked": true}}}
+  /// Output: {"lockers": [{"id": "123", "locked": false}, {"id": "456", "locked": true}]}
+  Map<String, dynamic> _convertLockersObjectToList(Map<String, dynamic> data) {
+    Map<String, dynamic> result = Map.from(data);
+
+    if (result['lockers'] != null && result['lockers'] is Map) {
+      Map<String, dynamic> lockersObject = Map<String, dynamic>.from(result['lockers'] as Map);
+      List<Map<String, dynamic>> lockersList = [];
+
+      lockersObject.forEach((key, value) {
+        if (value is Map) {
+          Map<String, dynamic> locker = Map<String, dynamic>.from(value);
+          // Ensure the locker has its ID
+          locker['id'] = key;
+          lockersList.add(locker);
+        }
+      });
+
+      result['lockers'] = lockersList;
+    }
+
+    return result;
+  }
+
+  /// Update a specific locker in a unit (using object structure)
+  Future<void> updateLocker(String unitId, String lockerId, Map<String, dynamic> lockerData) async {
+    try {
+      // Convert DateTime objects to ISO strings
+      lockerData = _convertDateTimesToStrings(lockerData);
+      
+      await _unitsRef.child(unitId).child('lockers').child(lockerId).update(lockerData);
+    } catch (e) {
+      throw "Error updating locker: $e";
+    }
+  }
+
+  /// Add a new locker to a unit (using object structure)
+  Future<void> addLocker(String unitId, Map<String, dynamic> lockerData) async {
+    try {
+      String lockerId = lockerData['id'] ?? _generateLockerId();
+      lockerData['id'] = lockerId;
+      
+      // Convert DateTime objects to ISO strings
+      lockerData = _convertDateTimesToStrings(lockerData);
+      
+      await _unitsRef.child(unitId).child('lockers').child(lockerId).set(lockerData);
+    } catch (e) {
+      throw "Error adding locker: $e";
+    }
+  }
+
+  /// Remove a locker from a unit (using object structure)
+  Future<void> removeLocker(String unitId, String lockerId) async {
+    try {
+      await _unitsRef.child(unitId).child('lockers').child(lockerId).remove();
+    } catch (e) {
+      throw "Error removing locker: $e";
+    }
+  }
+
+  /// Generate a unique locker ID
+  String _generateLockerId() {
+    return DateTime.now().millisecondsSinceEpoch.toString();
   }
 }
