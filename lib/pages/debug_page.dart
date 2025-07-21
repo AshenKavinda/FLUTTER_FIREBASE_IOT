@@ -1,7 +1,6 @@
 // pages/debug_page.dart
 import 'package:flutter/material.dart';
-import 'package:firebase_core/firebase_core.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_database/firebase_database.dart';
 
 class DebugPage extends StatelessWidget {
   const DebugPage({super.key});
@@ -9,24 +8,23 @@ class DebugPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text('Firestore Debug')),
+      appBar: AppBar(title: Text('Firebase Realtime Database Debug')),
       body: Center(
         child: ElevatedButton(
-          onPressed: _testFirestore,
-          child: Text('Test Firestore Connection'),
+          onPressed: _testDatabase,
+          child: Text('Test Database Connection'),
         ),
       ),
     );
   }
 
-  Future<void> _testFirestore() async {
+  Future<void> _testDatabase() async {
     try {
-      await FirebaseFirestore.instance.collection('test').add({
-        'timestamp': DateTime.now(),
-      });
-      print('DEBUG: Firestore write successful');
+      DatabaseReference ref = FirebaseDatabase.instance.ref('test');
+      await ref.push().set({'timestamp': DateTime.now().toIso8601String()});
+      print('DEBUG: Database write successful');
     } catch (e) {
-      print('DEBUG: Firestore error: $e');
+      print('DEBUG: Database error: $e');
     }
   }
 }

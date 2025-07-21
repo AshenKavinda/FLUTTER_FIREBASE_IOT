@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import '../utils/theme.dart';
 import '../services/database.dart';
+import '../utils/models.dart';
 
 class UnitDetailsPage extends StatefulWidget {
   final String unitId;
@@ -41,21 +41,39 @@ class _UnitDetailsPageState extends State<UnitDetailsPage> {
   }
 
   Future<void> _fetchUnit() async {
+    print('DEBUG: Fetching unit with ID: ${widget.unitId}');
     setState(() => _isLoading = true);
     try {
-      DocumentSnapshot doc = await DatabaseService().getUnitById(widget.unitId);
-      if (!doc.exists) {
-        Fluttertoast.showToast(msg: 'Unit not found');
+      Map<String, dynamic>? doc = await DatabaseService().getUnitById(
+        widget.unitId,
+      );
+      print('DEBUG: Retrieved doc: $doc');
+      if (doc == null) {
+        print('DEBUG: Unit not found for ID: ${widget.unitId}');
+        Fluttertoast.showToast(
+          msg: 'Unit not found',
+          toastLength: Toast.LENGTH_SHORT,
+          gravity: ToastGravity.BOTTOM,
+        );
         Navigator.pop(context);
         return;
       }
-      _unitData = doc.data() as Map<String, dynamic>;
-      GeoPoint location = _unitData!['location'];
-      _latController.text = location.latitude.toStringAsFixed(6);
-      _lngController.text = location.longitude.toStringAsFixed(6);
+      _unitData = doc;
+      Map<String, dynamic> location = Map<String, dynamic>.from(
+        _unitData!['location'] as Map,
+      );
+      _latController.text = location['latitude'].toStringAsFixed(6);
+      _lngController.text = location['longitude'].toStringAsFixed(6);
       _isAvailable = _unitData!['status'] == 'available';
       _isDeleted = _unitData!['deleted'] == true;
-      _lockers = List<Map<String, dynamic>>.from(_unitData!['lockers'] ?? []);
+
+      // Convert lockers list with proper type casting
+      List<dynamic> lockersData = _unitData!['lockers'] ?? [];
+      _lockers =
+          lockersData
+              .map((locker) => Map<String, dynamic>.from(locker as Map))
+              .toList();
+
       // Initialize price controllers
       _priceControllers.forEach((c) => c.dispose());
       _priceControllers =
@@ -67,8 +85,14 @@ class _UnitDetailsPageState extends State<UnitDetailsPage> {
               )
               .toList();
       setState(() {});
+      print('DEBUG: Unit data loaded successfully');
     } catch (e) {
-      Fluttertoast.showToast(msg: 'Error loading unit: $e');
+      print('DEBUG: Error loading unit: $e');
+      Fluttertoast.showToast(
+        msg: 'Error loading unit: $e',
+        toastLength: Toast.LENGTH_SHORT,
+        gravity: ToastGravity.BOTTOM,
+      );
       Navigator.pop(context);
     } finally {
       setState(() => _isLoading = false);
@@ -133,10 +157,7 @@ class _UnitDetailsPageState extends State<UnitDetailsPage> {
       'deleted': _isDeleted,
     };
     try {
-      await FirebaseFirestore.instance
-          .collection('units')
-          .doc(widget.unitId)
-          .update(updatedData);
+      await DatabaseService().updateUnit(widget.unitId, updatedData);
       Fluttertoast.showToast(msg: 'Unit updated successfully');
       await _fetchUnit();
     } catch (e) {
@@ -168,10 +189,10 @@ class _UnitDetailsPageState extends State<UnitDetailsPage> {
     if (confirm != true) return;
     setState(() => _isLoading = true);
     try {
-      await FirebaseFirestore.instance
-          .collection('units')
-          .doc(widget.unitId)
-          .update({'deleted': true, 'timestamp': DateTime.now()});
+      await DatabaseService().updateUnit(widget.unitId, {
+        'deleted': true,
+        'timestamp': DateTime.now(),
+      });
       Fluttertoast.showToast(msg: 'Unit deleted (soft)');
       setState(() => _isDeleted = true);
     } catch (e) {
@@ -203,10 +224,10 @@ class _UnitDetailsPageState extends State<UnitDetailsPage> {
     if (confirm != true) return;
     setState(() => _isLoading = true);
     try {
-      await FirebaseFirestore.instance
-          .collection('units')
-          .doc(widget.unitId)
-          .update({'deleted': false, 'timestamp': DateTime.now()});
+      await DatabaseService().updateUnit(widget.unitId, {
+        'deleted': false,
+        'timestamp': DateTime.now(),
+      });
       Fluttertoast.showToast(msg: 'Unit restored');
       setState(() => _isDeleted = false);
       await _fetchUnit();

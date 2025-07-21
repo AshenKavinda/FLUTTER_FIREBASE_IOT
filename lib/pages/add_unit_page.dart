@@ -3,8 +3,8 @@ import 'package:flutter_firebase_iot/utils/theme.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:random_string/random_string.dart';
 import 'package:fluttertoast/fluttertoast.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import '../services/database.dart';
+import '../utils/models.dart';
 
 class AddUnitPage extends StatefulWidget {
   const AddUnitPage({super.key});
