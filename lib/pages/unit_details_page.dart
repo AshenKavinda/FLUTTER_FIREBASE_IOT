@@ -67,10 +67,11 @@ class _UnitDetailsPageState extends State<UnitDetailsPage> {
       _isAvailable = _unitData!['status'] == 'available';
       _isDeleted = _unitData!['deleted'] == true;
 
-      // Convert lockers list with proper type casting
+      // Convert lockers list with proper type casting, filtering out null values
       List<dynamic> lockersData = _unitData!['lockers'] ?? [];
       _lockers =
           lockersData
+              .where((locker) => locker != null) // Filter out null values
               .map((locker) => Map<String, dynamic>.from(locker as Map))
               .toList();
 

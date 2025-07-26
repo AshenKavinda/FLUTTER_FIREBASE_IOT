@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_firebase_iot/utils/theme.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:random_string/random_string.dart';
 import 'package:fluttertoast/fluttertoast.dart';
 import '../services/database.dart';
 import '../utils/models.dart';
@@ -91,10 +90,10 @@ class _AddUnitPageState extends State<AddUnitPage> {
     // Generate lockers list
     List<Map<String, dynamic>> lockers = List.generate(_lockersCount, (index) {
       return {
-        'id': randomAlphaNumeric(8),
+        'id': 'locker_${index + 1}',
         'status': 'available',
         'locked': 1,
-        'confirmation': 0,
+        'reservedDocID': '',
         'price': 0,
         'timestamp': DateTime.now(),
         'reserved': false,
